@@ -117,6 +117,7 @@ dmypy.json
 # IDE
 .idea
 .vscode
+#.code-workspace
 
 # Custom
 rpmtools
