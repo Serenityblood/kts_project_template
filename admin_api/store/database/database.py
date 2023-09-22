@@ -1,14 +1,12 @@
 from typing import Optional, TYPE_CHECKING
 
-from sqlalchemy.ext.asyncio import (
-    AsyncEngine, AsyncSession, create_async_engine
-)
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 from kts_backend.store.database.sqlalchemy_database import db
 
 if TYPE_CHECKING:
-    from web.app import Application
+    from admin_api.web.app import Application
 
 
 class Database:
@@ -28,7 +26,7 @@ class Database:
         self._engine = create_async_engine(
             database_url, echo=True, future=True
         )
-        self.session = sessionmaker(
+        self.session: AsyncSession = sessionmaker(
             self._engine, expire_on_commit=False, class_=AsyncSession
         )
 

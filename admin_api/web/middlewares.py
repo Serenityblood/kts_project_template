@@ -6,11 +6,11 @@ from aiohttp.web_middlewares import middleware
 from aiohttp_apispec import validation_middleware
 from aiohttp_session import get_session
 
-from app.admin.models import Admin
-from app.web.utils import error_json_response
+from admin_api.admin.models import Admin
+from admin_api.web.utils import error_json_response
 
 if typing.TYPE_CHECKING:
-    from app.web.app import Application, Request
+    from admin_api.web.app import Application, Request
 
 
 @middleware

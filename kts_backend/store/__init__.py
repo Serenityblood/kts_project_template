@@ -1,9 +1,9 @@
 import typing
 
-from store.database.database import Database
+from kts_backend.store.database.database import Database
 
 if typing.TYPE_CHECKING:
-    from web.app import Application
+    from kts_backend.web.app import Application
 
 
 class Store:

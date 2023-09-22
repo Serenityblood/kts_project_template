@@ -7,4 +7,22 @@ sentry:
   dsn:
   env: dev
 
+session:
+  key: CaY5iCkYtN7DqXdiYK1BvmGrQuaSA4Tl4bEk9my0jc0=
+
+admin:
+  email: admin@admin.com
+  password: admin
+
+database:
+  host: 127.0.0.1
+  port: 5432
+  user: postgres
+  password: HunteR321
+  database: pr
+
+bot:
+  token: group_token
+  group_id: 1
+
 store: {}
