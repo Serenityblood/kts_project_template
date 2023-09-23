@@ -20,6 +20,7 @@ class BotManager:
                 Message(
                     user_id=update.object.user_id,
                     text=update.object.body,
+                    peer_id=update.object.peer_id
                 )
             )
             self.logger.info(f'Message {update.object.id} sendback')
