@@ -19,4 +19,5 @@ class PlayerModel(db):
     id = Column(Integer, primary_key=True)
     vk_id = Column(Integer, unique=True, nullable=False)
     name = Column(String)
+    last_name = Column(String)
     scores = relationship('ScroreModel', back_populates='player')

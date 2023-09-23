@@ -8,6 +8,7 @@ from aiohttp.client import ClientSession
 from kts_backend.base.base_accessor import BaseAccessor
 from kts_backend.store.vk_api.dataclasses import Message, Update, UpdateObject
 from kts_backend.store.vk_api.poller import Poller
+from kts_backend.users.views.models import Player
 
 if typing.TYPE_CHECKING:
     from kts_backend.web.app import Application
@@ -116,3 +117,48 @@ class VkApiAccessor(BaseAccessor):
         ) as resp:
             data = await resp.json()
             self.logger.info(data)
+
+    async def get_vk_users_info(self, user_ids: int) -> list[Player]:
+        async with self.session.get(
+            self._build_query(
+                API_PATH,
+                'users.get',
+                params={
+                    'user_id': ','.join(user_ids)
+                }
+            )
+        ) as resp:
+            data = await resp.json()['response']
+        players = []
+        for user in data:
+            players.append(
+                Player(
+                    vk_id=user['id'],
+                    name=user['first_name'],
+                    last_name=user['last_name']
+                )
+            )
+        return players
+
+    async def get_conversation_memebrs(self, peer_id: int):
+        async with self.session.get(
+            self._build_query(
+                API_PATH,
+                'messages.getConversationMembers',
+                params={
+                    'peer_id': peer_id,
+                    'group_id': self.app.config.bot.group_id
+                }
+            )
+        ) as resp:
+            profiles = await resp.json()['response']['profiles']
+            players = []
+            for user in profiles:
+                players.append(
+                    Player(
+                        vk_id=user['id'],
+                        name=user['first_name'],
+                        last_name=user['last_name']
+                    )
+                )
+            return players
