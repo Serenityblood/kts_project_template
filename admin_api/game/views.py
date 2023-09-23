@@ -30,7 +30,10 @@ class AddCompanyView(AuthRequiredMixin, View):
 
 class ListCompanysView(AuthRequiredMixin, View):
     async def get(self):
-        pass
+        companys = await self.request.app.store.games.list_companys()
+        return json_response(
+            data={'companys': [CompanySchema().dump(c) for c in companys]}
+        )
 
 
 class ResetCompanysView(AuthRequiredMixin, View):

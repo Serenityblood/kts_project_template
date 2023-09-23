@@ -22,7 +22,7 @@ database:
   database: pr
 
 bot:
-  token: group_token
-  group_id: 1
+  token: vk1.a.8VXIelgt4ECXO1mpuUEdSS2TOeEw4vfdTzPI761pMW46psK5hmm6ySadU-88gCQj19A9PzVaGnA-sKgbhIEnSMrwlInW243s76EKqCCHFYQPp-b2FbtJ5zvV1aCyMthnfaUy6iMQ-bAWztR7JCZKIHKiEQpPLL35qbh50tXwQ-jgCyYvI-fpZiiYLU36_eAIeWiwKECA1xHoKfsdykgqkA
+  group_id: 158327634
 
 store: {}
