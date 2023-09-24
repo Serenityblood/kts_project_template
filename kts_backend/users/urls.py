@@ -1,5 +1,5 @@
 from aiohttp.web_app import Application
-from aiohttp_cors import CorsConfig
+# from aiohttp_cors import CorsConfig
 
 
 __all__ = ("register_urls",)

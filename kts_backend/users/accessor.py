@@ -6,7 +6,7 @@ from kts_backend.users.views.models import PlayerModel, Player
 
 
 class UserAccessor(BaseAccessor):
-    async def create_players(self, players: list[Player]):
+    async def create_players(self, players: list[Player]) -> list[PlayerModel]:
         players_models = []
         for player in players:
             if await self.get_player_by_vk_id(player.vk_id) is not None:
@@ -21,6 +21,7 @@ class UserAccessor(BaseAccessor):
         async with self.app.database.session.begin() as session:
             session.add_all(players_models)
             await session.commit()
+        return players_models
 
     async def get_player_by_vk_id(self, vk_id: int):
         async with self.app.database.session.begin() as session:

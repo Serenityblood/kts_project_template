@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy.orm import relationship
 
 from kts_backend.store.database.sqlalchemy_database import db
 
@@ -26,4 +27,5 @@ class StockModel(db):
     id = Column(Integer, primary_key=True)
     price = Column(Integer, nullable=False)
     owner_id = Column(ForeignKey('players.id', ondelete='CASCADE'))
-    company_id = Column(ForeignKey('companys.id', ondelete='CASCADE'))
+    company_id = Column(ForeignKey('ingamecompanys.id', ondelete='CASCADE'))
+    company = relationship('InGameCompanyModel', back_populates='scores')
