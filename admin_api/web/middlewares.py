@@ -6,7 +6,7 @@ from aiohttp.web_middlewares import middleware
 from aiohttp_apispec import validation_middleware
 from aiohttp_session import get_session
 
-from admin_api.admin.models import Admin
+from admin_api.admin.models import AdminModel
 from admin_api.web.utils import error_json_response
 
 if typing.TYPE_CHECKING:
@@ -17,7 +17,7 @@ if typing.TYPE_CHECKING:
 async def auth_middleware(request: "Request", handler: callable):
     session = await get_session(request)
     if session:
-        request.admin = Admin.from_session(session)
+        request.admin = AdminModel.from_session(session)
     return await handler(request)
 
 

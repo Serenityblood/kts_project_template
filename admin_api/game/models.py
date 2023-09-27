@@ -19,13 +19,3 @@ class CompanyModel(db):
     id = Column(Integer, primary_key=True)
     title = Column(String, unique=True)
     current_stock_price = Column(Integer)
-
-
-class StockModel(db):
-    __tablename__ = 'stocks'
-
-    id = Column(Integer, primary_key=True)
-    price = Column(Integer, nullable=False)
-    owner_id = Column(ForeignKey('players.id', ondelete='CASCADE'))
-    company_id = Column(ForeignKey('ingamecompanys.id', ondelete='CASCADE'))
-    company = relationship('InGameCompanyModel', back_populates='scores')

@@ -1,5 +1,6 @@
+from aiohttp.web_exceptions import HTTPUnauthorized, HTTPForbidden
 from aiohttp_apispec import request_schema, response_schema
-from aiohttp_session import new_session
+from aiohttp_session import get_session, new_session
 
 from admin_api.admin.schemes import AdminSchema
 from admin_api.web.app import View
@@ -15,12 +16,7 @@ class AdminLoginView(View):
         password = self.data['password']
         admin = await self.request.app.store.admins.get_by_email(email)
         if admin is None:
-            return error_json_response(
-                    http_status=403,
-                    message='No such user in db',
-                    data=self.data,
-                    status=HTTP_ERROR_CODES[403]
-                )
+            raise HTTPForbidden('No such user in db')
 
         if admin.is_password_valid(password):
             session = await new_session(self.request)
@@ -28,15 +24,16 @@ class AdminLoginView(View):
             return json_response(
                 data=AdminSchema().dump(obj=admin)
             )
-        return error_json_response(
-                    http_status=403,
-                    message='No such user in db',
-                    data=self.data,
-                    status=HTTP_ERROR_CODES[403]
-                )
+        raise HTTPForbidden('No such user in db')
 
 
 class AdminCurrentView(View):
     @response_schema(AdminSchema, 200)
     async def get(self):
-        pass
+        if session := await get_session(self.request):
+            admin = await self.request.app.store.admins.get_by_email(
+                session['admin']['email']
+            )
+            return json_response(data=AdminSchema().dump(obj=admin))
+        else:
+            raise HTTPUnauthorized

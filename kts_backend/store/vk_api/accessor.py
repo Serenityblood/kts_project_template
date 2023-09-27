@@ -1,14 +1,17 @@
+import asyncio
 import random
 import typing
 from typing import Optional
 
 from aiohttp import TCPConnector
 from aiohttp.client import ClientSession
+from sqlalchemy import select
 
 from kts_backend.base.base_accessor import BaseAccessor
 from kts_backend.store.vk_api.dataclasses import Message, Update, UpdateObject
 from kts_backend.store.vk_api.poller import Poller
 from kts_backend.users.views.models import Player
+
 
 if typing.TYPE_CHECKING:
     from kts_backend.web.app import Application
@@ -85,7 +88,6 @@ class VkApiAccessor(BaseAccessor):
             self.ts = data["ts"]
             raw_updates = data.get("updates", [])
             updates = []
-            print(raw_updates)
             for update in raw_updates:
                 if update['type'] == 'message_new':
                     updates.append(
@@ -140,25 +142,32 @@ class VkApiAccessor(BaseAccessor):
             )
         return players
 
-    async def get_conversation_memebrs(self, peer_id: int):
+    async def get_conversation_members(self, peer_id: int):
         async with self.session.get(
             self._build_query(
                 API_PATH,
                 'messages.getConversationMembers',
                 params={
                     'peer_id': peer_id,
-                    'group_id': self.app.config.bot.group_id
+                    'group_id': self.app.config.bot.group_id,
+                    'access_token': self.app.config.bot.token
                 }
             )
         ) as resp:
-            profiles = await resp.json()['response']['profiles']
-            players = []
+            resp = await resp.json()
+            profiles = resp['response']['profiles']
+            players: list[Player] = []
             for user in profiles:
                 players.append(
                     Player(
                         vk_id=user['id'],
                         name=user['first_name'],
-                        last_name=user['last_name']
+                        last_name=user['last_name'],
+                        id=None,
+                        game_id=None,
+                        capital=None,
+                        clear_capital=None,
+                        stocks=None
                     )
                 )
             return players

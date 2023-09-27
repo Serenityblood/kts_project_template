@@ -10,8 +10,8 @@ from alembic import context
 
 from kts_backend.store.database import db
 from admin_api.admin.models import AdminModel
-from admin_api.game.models import CompanyModel, StockModel
-from kts_backend.games.models import GameModel, ScoreModel
+from admin_api.game.models import CompanyModel
+from kts_backend.games.models import GameModel, StockModel, InGameCompanyModel
 from kts_backend.users.views.models import PlayerModel
 
 # this is the Alembic Config object, which provides

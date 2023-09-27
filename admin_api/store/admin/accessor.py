@@ -4,7 +4,7 @@ from hashlib import sha256
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, NoResultFound
 
-from admin_api.admin.models import Admin, AdminModel
+from admin_api.admin.models import AdminModel
 from admin_api.base.base_accessor import BaseAccessor
 from admin_api.web.app import Application
 
@@ -25,18 +25,18 @@ class AdminAccessor(BaseAccessor):
         except IntegrityError:
             return None
 
-    async def get_by_email(self, email: str) -> Admin:
+    async def get_by_email(self, email: str) -> AdminModel:
         async with self.app.database.session.begin() as session:
             result = await session.execute(select(AdminModel).where(
                 AdminModel.email == email
             ))
             try:
                 admin = result.scalar_one()
-                return Admin(admin.id, admin.email, admin.password)
+                return admin
             except NoResultFound:
                 return None
 
-    async def create_admin(self, email: str, password: str) -> Admin:
+    async def create_admin(self, email: str, password: str) -> AdminModel:
         admin = AdminModel(email=email, password=password)
         async with self.app.database.session.begin() as session:
             session.add(admin)
