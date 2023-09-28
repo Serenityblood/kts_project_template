@@ -9,8 +9,10 @@ from kts_backend.store.database.sqlalchemy_database import db
 
 @dataclass
 class Stock:
+    id: int
     owner_id: int
     company_id: int
+    game_id: int
 
 
 @dataclass
@@ -32,6 +34,7 @@ class GameModel(db):
     current_round = Column(Integer, default=0)
     companys = relationship('InGameCompanyModel', back_populates='game')
     max_rounds = Column(Integer, nullable=False)
+    stocks = relationship('StockModel', back_populates='game')
 
 
 class InGameCompanyModel(db):
@@ -53,3 +56,5 @@ class StockModel(db):
     player = relationship('PlayerModel', back_populates='stocks')
     company_id = Column(ForeignKey('ingamecompanys.id', ondelete='CASCADE'))
     company = relationship('InGameCompanyModel', back_populates='stocks')
+    game_id = Column(ForeignKey('games.id', ondelete='CASCADE'))
+    game = relationship('GameModel', back_populates='stocks')

@@ -8,6 +8,7 @@ from kts_backend.games.models import Company, Stock
 class Game:
     def __init__(
             self,
+            id: int,
             players: dict[int, Player],
             companys: dict[str, Company],
             max_rounds: int,
@@ -25,6 +26,7 @@ class Game:
         self.game_id = game_id
         self.chat_id = chat_id
         self.max_rounds = max_rounds
+        self.id = id
 
     async def start(self):
         self.current_round = 0
@@ -35,7 +37,7 @@ class Game:
             return 'Нет активных игр'
         self.current_round += 1
         self.round_in_progress = True
-        some = asyncio.get_running_loop().call_later(
+        asyncio.get_running_loop().call_later(
             60,
             lambda: asyncio.ensure_future(self.stop_round())
         )
@@ -43,9 +45,7 @@ class Game:
 
     async def stop_round(self):
         self.round_in_progress = False
-        if self.current_round == self.max_rounds:
-            self.is_active = False
-            return False
+        self.current_round += 1
         for _, player in self.players.items():
             player.capital = 0
         for _, company in self.companys.items():
@@ -62,7 +62,8 @@ class Game:
                 player.capital += len(
                     player.stocks[company.title]
                 ) * company.current_stock_price
-        return True
+            if self.current_round == self.max_rounds:
+                self.is_active = False
 
     async def buy_stock(self, company_title, user_id):
         if self.round_in_progress is False:
@@ -73,8 +74,10 @@ class Game:
         company = self.companys[company_title]
         if user.clear_capital >= company.current_stock_price:
             user.stocks[company.title].append(Stock(
+                id=None,
                 owner_id=user.id,
-                company_id=company.id
+                company_id=company.id,
+                game_id=self.game_id
             ))
             user.clear_capital -= company.current_stock_price
             user.capital += company.current_stock_price
@@ -100,11 +103,20 @@ class Game:
     async def get_current_stats(self):
         message = ''
         for _, player in self.players.items():
-            message += f'{player.name}: {player.capital} в акциях, {player.clear_capital} - на руках. '
+            message += f'{player.name}: {player.capital} в акциях, {player.clear_capital} - на руках.<br>'
         return message
 
     async def get_company_stats(self):
         message = ''
         for _, company in self.companys.items():
-            message += f'{company.title}: цена акций {company.current_stock_price}. '
+            message += f'{company.title}: цена акций {company.current_stock_price}.<br>'
+        return message
+
+    async def get_game_stats(self):
+        message = ''
+        message += (
+            await self.get_current_stats()
+            + await self.get_company_stats()
+            + str(self.current_round) + ' - текущий раунд'
+        )
         return message

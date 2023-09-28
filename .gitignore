@@ -124,4 +124,5 @@ local
 .DS_Store
 
 .code-workspace
+config.yaml
 

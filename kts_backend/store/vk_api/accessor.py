@@ -155,6 +155,7 @@ class VkApiAccessor(BaseAccessor):
             )
         ) as resp:
             resp = await resp.json()
+            print(resp)
             profiles = resp['response']['profiles']
             players: list[Player] = []
             for user in profiles:
