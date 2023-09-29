@@ -1,4 +1,3 @@
-import asyncio
 import typing
 
 from kts_backend.store.database.database import Database

@@ -1,6 +1,5 @@
-import asyncio
-import json
 import random
+import json
 import typing
 from typing import Optional
 
@@ -10,7 +9,7 @@ from aio_pika.abc import DeliveryMode
 from aiohttp.client import ClientSession
 
 from kts_backend.base.base_accessor import BaseAccessor
-from kts_backend.store.vk_api.dataclasses import Message, Update, UpdateObject
+from kts_backend.store.vk_api.vk_dataclasses import Message
 from kts_backend.store.vk_api.poller import Poller
 from kts_backend.users.views.models import Player
 
@@ -99,16 +98,19 @@ class VkApiAccessor(BaseAccessor):
                         update
                     )
             if self.rabbit_connect is None:
-                self.rabbit_connect = await rq_con('amqp://guest:guest@rabbitmq:5672/')
+                self.rabbit_connect = await rq_con(
+                    'amqp://guest:guest@rabbitmq:5672/'
+                )
             channel = await self.rabbit_connect.channel()
-            queue = await channel.declare_queue(
+            await channel.declare_queue(
                     "test_queue",
                     durable=True,
                 )
             message_body = json.dumps(updates)
             await channel.default_exchange.publish(
                 PikaMes(
-                    message_body.encode(), delivery_mode=DeliveryMode.PERSISTENT
+                    message_body.encode(),
+                    delivery_mode=DeliveryMode.PERSISTENT
                 ),
                 routing_key='test_queue'
             )

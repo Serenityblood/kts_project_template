@@ -25,7 +25,20 @@ services:
     ports:
       - "5432:5432"
 
-  web:
+  poller:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    restart: always
+    command:
+      sh -c "python kts_backend/store/vk_api/poller_sep.py"
+    ports:
+      - 8001:8001
+    depends_on:
+      - db
+      - rabbitmq
+
+  bot:
     build:
       context: ./
       dockerfile: Dockerfile
@@ -38,7 +51,22 @@ services:
     depends_on:
       - db
       - rabbitmq
+      - poller
 
+  sender:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    restart: always
+    command:
+      sh -c "python kts_backend/store/vk_api/sender.py"
+    ports:
+      - 8002:8002
+    depends_on:
+      - db
+      - rabbitmq
+      - poller
+      - bot
 
 volumes:
   pgdata:

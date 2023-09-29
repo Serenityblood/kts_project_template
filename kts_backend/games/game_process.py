@@ -1,7 +1,6 @@
 import asyncio
 import random
 
-from asyncio import Future
 from kts_backend.users.views.models import Player
 from kts_backend.games.models import Company, Stock
 
