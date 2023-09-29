@@ -38,17 +38,12 @@ class Game:
             return 'Нет активных игр'
         self.current_round += 1
         self.round_in_progress = True
-        # asyncio.get_running_loop().call_later(
-        #     60,
-        #     lambda: asyncio.ensure_future(self.stop_round())
-        # )
         stop_round = asyncio.get_running_loop().create_task(self.stop_round())
         return stop_round
 
     async def stop_round(self):
-        await asyncio.sleep(10)
+        await asyncio.sleep(60)
         self.round_in_progress = False
-        self.current_round += 1
         for player in self.players.values():
             player.capital = 0
         for company in self.companys.values():
@@ -61,12 +56,14 @@ class Game:
                 company.current_stock_price /= random.randint(
                     1, 3
                 )
-        for player in self.players.values():
-            player.capital += len(
-                player.stocks[company.title]
-            ) * company.current_stock_price
-        if self.current_round == self.max_rounds:
+            for player in self.players.values():
+                player.capital += len(
+                    player.stocks[company.title]
+                ) * company.current_stock_price
+        if self.current_round >= self.max_rounds:
             self.is_active = False
+        else:
+            self.current_round += 1
 
     async def buy_stock(self, company_title, user_id) -> str:
         if self.round_in_progress is False:

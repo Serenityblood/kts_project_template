@@ -26,3 +26,4 @@ def setup_store(app: "Application"):
     app.on_cleanup.append(app.database.disconnect)
     app.store = Store(app)
     app.on_startup.append(app.store.bots_manager.connect)
+    app.on_startup.append(app.store.bots_manager.start_consume)

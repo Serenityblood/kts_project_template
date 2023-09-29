@@ -5,10 +5,9 @@ import typing
 from typing import Optional
 
 from aiohttp import TCPConnector
-# from aio_pika import connect, Message as PikaMes
-# from aio_pika.abc import DeliveryMode
+from aio_pika import connect as rq_con, Message as PikaMes
+from aio_pika.abc import DeliveryMode
 from aiohttp.client import ClientSession
-from sqlalchemy import select
 
 from kts_backend.base.base_accessor import BaseAccessor
 from kts_backend.store.vk_api.dataclasses import Message, Update, UpdateObject
@@ -41,7 +40,7 @@ class VkApiAccessor(BaseAccessor):
             self.logger.error("Exception", exc_info=e)
         self.poller = Poller(app.store)
         self.logger.info("start polling")
-        # self.rabbit_connect = await connect("amqp://guest:guest@localhost/")
+        self.rabbit_connect = await rq_con("amqp://guest:guest@rabbitmq:5672/")
         await self.poller.start()
 
     async def disconnect(self, app: "Application"):
@@ -97,29 +96,23 @@ class VkApiAccessor(BaseAccessor):
             for update in raw_updates:
                 if update['type'] == 'message_new':
                     updates.append(
-                        Update(
-                            type=update["type"],
-                            object=UpdateObject(
-                                id=update["object"]['message']["id"],
-                                user_id=update["object"]['message']["from_id"],
-                                body=update["object"]['message']["text"],
-                                peer_id=update['object']['message']['peer_id']
-                            ),
-                        )
+                        update
                     )
-            # channel = await self.rabbit_connect.channel()
-            # queue = await channel.declare_queue(
-            #         "task_queue_test",
-            #         durable=True,
-            #     )
-            # message_body = json.dumps(updates)
-            # await channel.default_exchange.publish(
-            #     PikaMes(
-            #         message_body.encode(), delivery_mode=DeliveryMode.PERSISTENT
-            #     ),
-            #     routing_key='task_queue_test'
-            # )
-            await self.app.store.bots_manager.handle_updates(updates)
+            if self.rabbit_connect is None:
+                self.rabbit_connect = await rq_con('amqp://guest:guest@rabbitmq:5672/')
+            channel = await self.rabbit_connect.channel()
+            queue = await channel.declare_queue(
+                    "test_queue",
+                    durable=True,
+                )
+            message_body = json.dumps(updates)
+            await channel.default_exchange.publish(
+                PikaMes(
+                    message_body.encode(), delivery_mode=DeliveryMode.PERSISTENT
+                ),
+                routing_key='test_queue'
+            )
+            # await self.app.store.bots_manager.handle_updates(updates)
 
     async def send_message(self, message: Message) -> None:
         async with self.session.get(

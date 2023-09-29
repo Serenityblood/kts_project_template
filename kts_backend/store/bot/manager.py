@@ -3,12 +3,12 @@ import json
 import typing
 from logging import getLogger
 
-# from aio_pika import connect, Message as PikaMes
-# from aio_pika.abc import AbstractIncomingMessage
+from aio_pika import connect as rq_con, Message as PikaMes
+from aio_pika.abc import AbstractIncomingMessage
 
 from kts_backend.games.game_process import Game
 from kts_backend.games.models import GameModel, Company, Stock
-from kts_backend.store.vk_api.dataclasses import Message, Update
+from kts_backend.store.vk_api.dataclasses import Message, Update, UpdateObject
 from kts_backend.users.views.models import Player
 
 if typing.TYPE_CHECKING:
@@ -75,50 +75,53 @@ class BotManager:
                 current_round=game.current_round,
                 id=game.id
             )
-            # self.rabbit_connect = await connect("amqp://guest:guest@localhost/")
-            # async with self.rabbit_connect:
-            #     self.rabbit_channel = await self.rabbit_connect.channel()
-            #     await self.rabbit_channel.set_qos(prefetch_count=1)
 
-            #     queue = await self.rabbit_channel.declare_queue(
-            #         "task_queue_test",
-            #         durable=True,
-            #     )
+    async def start_consume(self, app:"Application"):
+        if self.rabbit_connect is None:
+            self.rabbit_connect = await rq_con("amqp://guest:guest@rabbitmq:5672/")
+        async with self.rabbit_connect:
+            self.rabbit_channel = await self.rabbit_connect.channel()
+            await self.rabbit_channel.set_qos(prefetch_count=1)
 
-            #     await queue.consume(self.test)
-            #     await asyncio.Future()
+            queue = await self.rabbit_channel.declare_queue(
+                "test_queue",
+                durable=True,
+            )
+
+            await queue.consume(self.reciver)
+            await asyncio.Future()
 
     async def handle_updates(self, updates: list[Update]):
         for update in updates:
             if '/help' in update.object.body:
                 message = (
                     'Привет, я бот для игры Биржа.<br>'
-                    'Для инициализации игры нужно написать команду "/start '
-                    '<количество раундов>"<br>'
-                    'Все присутствуюище в чате буду считаться '
+                    'Для инициализации игры нужно написать команду:<br>'
+                    '"/start <количество раундов>"<br>'
+                    '<br>Все присутствуюище в чате буду считаться '
                     'как игроки, у каждого '
                     'на счету будет по 1000 очков '
                     'которые можно тратить на покупку '
-                    'акций компаний.<br>Компаний в игре 3: a, b и с. '
+                    'акций компаний.<br><br>Компаний в игре 3: a, b и с. '
                     'Изначальная цена акций - 100 очков. В ходе игры '
-                    'она будет изменяться в случайном порядке.<br>'
+                    'она будет изменяться в случайном порядке.<br><br>'
                     'Игра состоит из раундов, после инициализации '
                     'нужно использовать команду "/round" для того, '
                     'чтобы его начать. Он продлится 60 секунд, в ходе '
                     'которых можно использовать две команды:<br>'
                     '"/buy <название компании>", "/sell <название компании>".'
-                    '<br>После завершения раунда происходит рассчет '
+                    '<br><br>После завершения раунда происходит рассчет '
                     'новых стоимостей акций и корректировка очков '
-                    'пользователей с учетом новых цен.<br>'
+                    'пользователей с учетом новых цен.<br><br>'
                     'Победителем считается тот, у кого в конце игры будет '
-                    'Сумарно больше всех очков "на счету" и "на руках"<br>'
+                    'Сумарно больше всех очков "на счету" и "на руках"<br><br>'
                     'Команды доступные для использования ЛЮБОЕ время при '
                     'условии начатой игры:<br>'
                     '"/stats" - статистика игроков<br>'
                     '"/companys" - текущие цены на акции компаний<br>'
-                    '"/game_stats" - общая статистика по игре'
+                    '"/game_stats" - общая статистика по игре<br>'
                     '"/last_game" - статистика последней завершенной игры'
-                    '"/stop_game" - полная остановка и завершение игры'
+                    '<br>"/stop_game" - полная остановка и завершение игры'
                 )
                 await self.app.store.vk_api.send_message(
                     Message(
@@ -164,22 +167,17 @@ class BotManager:
                         update.object.peer_id
                     )
                 )
+                to_create = []
                 for player in raw_players:
                     player.game_id = game.id
                     player.clear_capital = 1000
                     player.capital = 0
+                    to_create.append(player)
                 players = await self.app.store.users.create_players(
-                    raw_players
+                    to_create
                 )
                 companys = await self.app.store.games.create_companys(game.id)
                 message = 'Игра успешно создана'
-                await self.app.store.vk_api.send_message(
-                    Message(
-                        user_id=update.object.user_id,
-                        text=message,
-                        peer_id=update.object.peer_id
-                    )
-                )
                 active_game: GameModel = (
                     await self.app.store.games.get_active_game(game.chat_id)
                 )
@@ -215,6 +213,14 @@ class BotManager:
                     max_rounds=active_game.max_rounds,
                     id=active_game.id
                 )
+                await self.app.store.vk_api.send_message(
+                    Message(
+                        user_id=update.object.user_id,
+                        text=message,
+                        peer_id=update.object.peer_id
+                    )
+                )
+
             if '/round' in update.object.body:
                 result = (
                     await self.game_store[update.object.peer_id].start_round()
@@ -240,14 +246,6 @@ class BotManager:
                     )
                 )
 
-                # if self.game_store[update.object.peer_id].is_active is True:
-                #     asyncio.get_running_loop().call_later(
-                #         60,
-                #         lambda: asyncio.ensure_future(
-                #             self._round_end_update(update)
-                #         )
-                #     )
-            # Добавить исключения
             if '/buy' in update.object.body:
                 if len(update.object.body.split()) != 2:
                     return await self.app.store.vk_api.send_message(
@@ -403,3 +401,21 @@ class BotManager:
         )
         game = await self.app.store.games.update_game_conditions(game)
         del self.game_store[update.object.peer_id]
+
+    async def reciver(self, mess: AbstractIncomingMessage):
+        async with mess.process():
+            updates = mess.body
+            updates = json.loads(updates)
+            to_handle = []
+            for update in updates:
+                to_handle.append(Update(
+                    type=update["type"],
+                    object=UpdateObject(
+                        id=update["object"]['message']["id"],
+                        user_id=update["object"]['message']["from_id"],
+                        body=update["object"]['message']["text"],
+                        peer_id=update['object']['message']['peer_id']
+                    )
+                    )
+                )
+            await self.handle_updates(to_handle)
