@@ -35,7 +35,6 @@ class Game:
     async def start_round(self) -> asyncio.Task or str:
         if self.is_active is False or self.current_round == self.max_rounds:
             return 'Нет активных игр'
-        self.current_round += 1
         self.round_in_progress = True
         stop_round = asyncio.get_running_loop().create_task(self.stop_round())
         return stop_round

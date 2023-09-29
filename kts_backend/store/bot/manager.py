@@ -219,7 +219,7 @@ class BotManager:
                         peer_id=update.object.peer_id
                     )
                 await self.send_message(
-                    text=message,
+                    text='Раунд начался.',
                     peer_id=update.object.peer_id
                 )
                 result.add_done_callback(
