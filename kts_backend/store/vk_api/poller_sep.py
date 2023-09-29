@@ -86,7 +86,6 @@ class Poller:
             request_link
         ) as resp:
             data = await resp.json()
-            print(data)
             self.ts = data["ts"]
             raw_updates = data.get("updates", [])
             updates = []

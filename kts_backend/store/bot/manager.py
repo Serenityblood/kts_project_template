@@ -77,10 +77,9 @@ class BotManager:
             )
 
     async def start_consume(self, app: "Application"):
-        if self.rabbit_connect is None:
-            self.rabbit_connect = await rq_con(
+        self.rabbit_connect = await rq_con(
                 "amqp://guest:guest@rabbitmq:5672/"
-            )
+        )
         async with self.rabbit_connect:
             self.rabbit_channel = await self.rabbit_connect.channel()
             await self.rabbit_channel.set_qos(prefetch_count=1)
@@ -349,13 +348,12 @@ class BotManager:
         del self.game_store[update.object.peer_id]
 
     async def send_message(self, peer_id, text):
-        channel = await self.rabbit_connect.channel()
-        await channel.declare_queue(
-            'send_queue',
-            durable=True
-        )
+        queue = await self.rabbit_channel.declare_queue(
+                "send_queue",
+                durable=True,
+                )
         mess_body = json.dumps({'peer_id': peer_id, 'text': text})
-        await channel.default_exchange.publish(
+        await self.rabbit_channel.default_exchange.publish(
             PikaMes(
                 mess_body.encode(),
                 delivery_mode=DeliveryMode.PERSISTENT

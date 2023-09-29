@@ -33,7 +33,7 @@ services:
     command:
       sh -c "python kts_backend/store/vk_api/poller_sep.py"
     ports:
-      - 8001:8001
+      - 8000:8000
     depends_on:
       - db
       - rabbitmq
@@ -47,7 +47,7 @@ services:
       sh -c "alembic upgrade head &&
              python run_game.py"
     ports:
-      - 8000:8000
+      - 8001:8001
     depends_on:
       - db
       - rabbitmq
