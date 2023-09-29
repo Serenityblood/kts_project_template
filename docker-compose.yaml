@@ -29,6 +29,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile
+    restart: always
     command:
       sh -c "alembic upgrade head &&
              python run_game.py"
@@ -36,7 +37,8 @@ services:
       - 8000:8000
     depends_on:
       - db
-      - rabbitmq  
+      - rabbitmq
+
 
 volumes:
   pgdata:

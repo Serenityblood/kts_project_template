@@ -176,14 +176,15 @@ class BotManager:
                 players = await self.app.store.users.create_players(
                     to_create
                 )
+                print(players)
                 companys = await self.app.store.games.create_companys(game.id)
                 message = 'Игра успешно создана'
                 active_game: GameModel = (
                     await self.app.store.games.get_active_game(game.chat_id)
                 )
-                players = []
+                game_players = []
                 for player in active_game.players:
-                    players.append(Player(
+                    game_players.append(Player(
                         id=player.id,
                         vk_id=player.vk_id,
                         name=player.name,
@@ -193,6 +194,7 @@ class BotManager:
                         clear_capital=player.clear_capital,
                         game_id=active_game.id
                     ))
+                print(game_players)
                 companys = []
                 for company in active_game.companys:
                     companys.append(
@@ -205,7 +207,7 @@ class BotManager:
                     )
 
                 self.game_store[game.chat_id] = Game(
-                    players={p.vk_id: p for p in players},
+                    players={p.vk_id: p for p in game_players},
                     companys={c.title: c for c in companys},
                     game_id=active_game.id,
                     is_active=active_game.is_active,

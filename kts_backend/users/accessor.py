@@ -10,10 +10,6 @@ class UserAccessor(BaseAccessor):
         players_models = []
         result = []
         for player in players:
-            p = await self.get_player_by_vk_id(player.vk_id)
-            if p is not None:
-                result.append(p)
-                continue
             players_models.append(
                 PlayerModel(
                     vk_id=player.vk_id,

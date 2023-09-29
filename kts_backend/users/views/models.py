@@ -23,7 +23,7 @@ class PlayerModel(db):
     __tablename__ = 'players'
 
     id = Column(Integer, primary_key=True)
-    vk_id = Column(Integer, unique=True, nullable=False)
+    vk_id = Column(Integer, nullable=False)
     name = Column(String)
     last_name = Column(String)
     game_id = Column(ForeignKey('games.id', ondelete='CASCADE'))
