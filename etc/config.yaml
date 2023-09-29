@@ -15,11 +15,11 @@ admin:
   password: admin
 
 database:
-  host: 127.0.0.1
+  host: 127.0.0.1 # db
   port: 5432
   user: postgres
   password: HunteR321
-  database: pr
+  database: pr # postgres
 
 bot:
   token: vk1.a.8VXIelgt4ECXO1mpuUEdSS2TOeEw4vfdTzPI761pMW46psK5hmm6ySadU-88gCQj19A9PzVaGnA-sKgbhIEnSMrwlInW243s76EKqCCHFYQPp-b2FbtJ5zvV1aCyMthnfaUy6iMQ-bAWztR7JCZKIHKiEQpPLL35qbh50tXwQ-jgCyYvI-fpZiiYLU36_eAIeWiwKECA1xHoKfsdykgqkA

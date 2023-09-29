@@ -1,6 +1,10 @@
 import asyncio
+import json
 import typing
 from logging import getLogger
+
+# from aio_pika import connect, Message as PikaMes
+# from aio_pika.abc import AbstractIncomingMessage
 
 from kts_backend.games.game_process import Game
 from kts_backend.games.models import GameModel, Company, Stock
@@ -17,9 +21,13 @@ class BotManager:
         self.bot = None
         self.logger = getLogger("handler")
         self.game_store: dict[int, Game] = {}
+        self.rabbit_channel = None
+        self.rabbit_connect = None
 
     async def connect(self, app: "Application"):
-        games: list[GameModel] = await self.app.store.games.get_all_active_games()
+        games: list[GameModel] = (
+            await self.app.store.games.get_all_active_games()
+        )
         for game in games:
             players = []
             for p in game.players:
@@ -67,23 +75,68 @@ class BotManager:
                 current_round=game.current_round,
                 id=game.id
             )
+            # self.rabbit_connect = await connect("amqp://guest:guest@localhost/")
+            # async with self.rabbit_connect:
+            #     self.rabbit_channel = await self.rabbit_connect.channel()
+            #     await self.rabbit_channel.set_qos(prefetch_count=1)
 
-    async def disconnect(self, app: "Application"):
-        for _, game in self.game_store:
-            await self.app.store.games.update_game_conditions(game)
+            #     queue = await self.rabbit_channel.declare_queue(
+            #         "task_queue_test",
+            #         durable=True,
+            #     )
+
+            #     await queue.consume(self.test)
+            #     await asyncio.Future()
 
     async def handle_updates(self, updates: list[Update]):
         for update in updates:
-            if '/check' in update.object.body:
-                await self.app.store.games.check(update)
-
-            if '/get_users' in update.object.body:
-                await self.app.store.games.check2(update)
-
             if '/help' in update.object.body:
-                pass
+                message = (
+                    'Привет, я бот для игры Биржа.<br>'
+                    'Для инициализации игры нужно написать команду "/start '
+                    '<количество раундов>"<br>'
+                    'Все присутствуюище в чате буду считаться '
+                    'как игроки, у каждого '
+                    'на счету будет по 1000 очков '
+                    'которые можно тратить на покупку '
+                    'акций компаний.<br>Компаний в игре 3: a, b и с. '
+                    'Изначальная цена акций - 100 очков. В ходе игры '
+                    'она будет изменяться в случайном порядке.<br>'
+                    'Игра состоит из раундов, после инициализации '
+                    'нужно использовать команду "/round" для того, '
+                    'чтобы его начать. Он продлится 60 секунд, в ходе '
+                    'которых можно использовать две команды:<br>'
+                    '"/buy <название компании>", "/sell <название компании>".'
+                    '<br>После завершения раунда происходит рассчет '
+                    'новых стоимостей акций и корректировка очков '
+                    'пользователей с учетом новых цен.<br>'
+                    'Победителем считается тот, у кого в конце игры будет '
+                    'Сумарно больше всех очков "на счету" и "на руках"<br>'
+                    'Команды доступные для использования ЛЮБОЕ время при '
+                    'условии начатой игры:<br>'
+                    '"/stats" - статистика игроков<br>'
+                    '"/companys" - текущие цены на акции компаний<br>'
+                    '"/game_stats" - общая статистика по игре'
+                    '"/last_game" - статистика последней завершенной игры'
+                    '"/stop_game" - полная остановка и завершение игры'
+                )
+                await self.app.store.vk_api.send_message(
+                    Message(
+                            user_id=update.object.user_id,
+                            text=message,
+                            peer_id=update.object.peer_id
+                        )
+                )
 
             if '/start' in update.object.body:
+                if update.object.peer_id in self.game_store:
+                    return await self.app.store.vk_api.send_message(
+                        Message(
+                            user_id=update.object.user_id,
+                            text='Уже есть активная игра',
+                            peer_id=update.object.peer_id
+                        )
+                    )
                 splited = update.object.body.split()
                 if len(splited) != 2:
                     return await self.app.store.vk_api.send_message(
@@ -115,7 +168,9 @@ class BotManager:
                     player.game_id = game.id
                     player.clear_capital = 1000
                     player.capital = 0
-                players = await self.app.store.users.create_players(raw_players)
+                players = await self.app.store.users.create_players(
+                    raw_players
+                )
                 companys = await self.app.store.games.create_companys(game.id)
                 message = 'Игра успешно создана'
                 await self.app.store.vk_api.send_message(
@@ -125,8 +180,8 @@ class BotManager:
                         peer_id=update.object.peer_id
                     )
                 )
-                active_game: GameModel = await self.app.store.games.get_active_game(
-                    game.chat_id
+                active_game: GameModel = (
+                    await self.app.store.games.get_active_game(game.chat_id)
                 )
                 players = []
                 for player in active_game.players:
@@ -161,28 +216,53 @@ class BotManager:
                     id=active_game.id
                 )
             if '/round' in update.object.body:
-                message = (await self.game_store[update.object.peer_id].start_round())
+                result = (
+                    await self.game_store[update.object.peer_id].start_round()
+                )
+                if type(result) is str:
+                    return await self.app.store.vk_api.send_message(
+                        Message(
+                            user_id=update.object.user_id,
+                            text=result,
+                            peer_id=update.object.peer_id
+                        )
+                    )
                 await self.app.store.vk_api.send_message(
                     Message(
                         user_id=update.object.user_id,
-                        text=message,
+                        text='Раунд начался',
                         peer_id=update.object.peer_id
                     )
                 )
-                if self.game_store[update.object.peer_id].is_active is True:
-                    asyncio.get_running_loop().call_later(
-                        60,
-                        lambda: asyncio.ensure_future(
-                            self._round_end_update(update)
-                        )
+                result.add_done_callback(
+                    lambda x: asyncio.create_task(
+                        self._round_end_update(update)
                     )
+                )
+
+                # if self.game_store[update.object.peer_id].is_active is True:
+                #     asyncio.get_running_loop().call_later(
+                #         60,
+                #         lambda: asyncio.ensure_future(
+                #             self._round_end_update(update)
+                #         )
+                #     )
             # Добавить исключения
             if '/buy' in update.object.body:
+                if len(update.object.body.split()) != 2:
+                    return await self.app.store.vk_api.send_message(
+                        Message(
+                            user_id=update.object.user_id,
+                            text='Нужно укзать название компании',
+                            peer_id=update.object.peer_id
+                        )
+                    )
                 company_title = update.object.body.split()[1]
-                message = (await self.game_store[update.object.peer_id]
-                           .buy_stock(
-                    company_title, update.object.user_id
-                ))
+                message = (
+                    await self.game_store[update.object.peer_id].buy_stock(
+                        company_title, update.object.user_id
+                    )
+                )
                 await self.app.store.vk_api.send_message(
                     Message(
                         user_id=update.object.user_id,
@@ -191,11 +271,20 @@ class BotManager:
                     )
                 )
             if '/sell' in update.object.body:
+                if len(update.object.body.split()) != 2:
+                    return await self.app.store.vk_api.send_message(
+                        Message(
+                            user_id=update.object.user_id,
+                            text='Нужно укзать название компании',
+                            peer_id=update.object.peer_id
+                        )
+                    )
                 company_title = update.object.body.split()[1]
-                message = (await self.game_store[update.object.peer_id]
-                           .sell_stock(
-                    company_title, update.object.user_id
-                ))
+                message = (
+                    await self.game_store[update.object.peer_id].sell_stock(
+                        company_title, update.object.user_id
+                    )
+                )
                 await self.app.store.vk_api.send_message(
                     Message(
                         user_id=update.object.user_id,
@@ -259,6 +348,20 @@ class BotManager:
                         peer_id=update.object.peer_id
                     )
                 )
+            if '/stop_game' in update.object.body:
+                if update.object.peer_id in self.game_store:
+                    await self.end_game(update)
+                else:
+                    await self.app.store.vk_api.send_message(
+                        Message(
+                            user_id=update.object.user_id,
+                            text='Нет активных игр',
+                            peer_id=update.object.peer_id
+                        )
+                    )
+
+            if '/last_game' in update.object.body:
+                pass
 
     async def _round_end_update(self, update: Update):
         game: Game = self.game_store[update.object.peer_id]
@@ -286,10 +389,17 @@ class BotManager:
             game = await self.app.store.games.update_game_conditions(game)
             del self.game_store[update.object.peer_id]
 
-            # await self.app.store.vk_api.send_message(
-            #     Message(
-            #         user_id=update.object.user_id,
-            #         text=update.object.body,
-            #         peer_id=u`pdate.object.peer_id
-            #     )
-            # )
+    async def end_game(self, update):
+        game: Game = self.game_store[update.object.peer_id]
+        await game.stop_game()
+        text = await game.get_game_stats()
+        message = f'Игра завершена.<br>{text}'
+        await self.app.store.vk_api.send_message(
+            Message(
+                user_id=update.object.user_id,
+                text=message,
+                peer_id=update.object.peer_id
+            )
+        )
+        game = await self.app.store.games.update_game_conditions(game)
+        del self.game_store[update.object.peer_id]

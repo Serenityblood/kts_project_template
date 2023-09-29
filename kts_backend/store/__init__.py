@@ -14,7 +14,6 @@ class Store:
         from kts_backend.store.vk_api.accessor import VkApiAccessor
         from kts_backend.store.games.accessor import GameAccessor
 
-        self.queue = asyncio.Queue()
         self.users = UserAccessor(app)
         self.bots_manager = BotManager(app)
         self.vk_api = VkApiAccessor(app)
@@ -27,4 +26,3 @@ def setup_store(app: "Application"):
     app.on_cleanup.append(app.database.disconnect)
     app.store = Store(app)
     app.on_startup.append(app.store.bots_manager.connect)
-    app.on_startup.append(app.store.bots_manager.disconnect)

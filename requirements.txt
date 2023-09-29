@@ -14,3 +14,4 @@ cryptography==37.0.4
 PyYAML==6.0
 asyncpg==0.26.0
 alembic==1.8.1
+aio-pika==9.3.0

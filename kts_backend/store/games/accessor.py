@@ -1,22 +1,17 @@
-import asyncio
-
-from sqlalchemy import delete, select,  update as upd
+from sqlalchemy import desc, delete, select,  update as upd
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import joinedload, subqueryload
-from admin_api.web.app import Application
 
 from kts_backend.base.base_accessor import BaseAccessor
 from kts_backend.games.game_process import Game
-from kts_backend.games.models import GameModel, InGameCompanyModel, Stock, StockModel
-from kts_backend.store.vk_api.dataclasses import Message
+from kts_backend.games.models import (
+    GameModel, InGameCompanyModel, Stock, StockModel
+)
 from kts_backend.users.views.models import PlayerModel
 
 
 class GameAccessor(BaseAccessor):
-    async def connect(self, app: Application) -> GameModel:
-        self.game_store = {}
-
-    async def create_game(self, peer_id, max_rounds=5):
+    async def create_game(self, peer_id, max_rounds=5) -> GameModel:
         game = GameModel(
             chat_id=peer_id, is_active=True,
             max_rounds=max_rounds, current_round=0
@@ -42,7 +37,7 @@ class GameAccessor(BaseAccessor):
             except NoResultFound:
                 return None
 
-    async def get_active_game(self, peer_id):
+    async def get_active_game(self, peer_id) -> GameModel or None:
         async with self.app.database.session.begin() as session:
             resp = await session.execute(
                 select(GameModel).options(
@@ -59,7 +54,7 @@ class GameAccessor(BaseAccessor):
             except NoResultFound:
                 return None
 
-    async def create_companys(self, game_id):
+    async def create_companys(self, game_id) -> list[InGameCompanyModel]:
         names = ['a', 'b', 'c']
         companys = []
         for i in range(0, 3):
@@ -75,7 +70,7 @@ class GameAccessor(BaseAccessor):
             await session.commit()
         return companys
 
-    async def update_game_conditions(self, game: Game):
+    async def update_game_conditions(self, game: Game) -> Game:
         async with self.app.database.session.begin() as session:
             await session.execute(
                 upd(GameModel).where(
@@ -88,12 +83,16 @@ class GameAccessor(BaseAccessor):
 
                 )
             )
-            for _, company in game.companys.items():
+            for company in game.companys.values():
                 await session.execute(
                     upd(InGameCompanyModel).where(
                         InGameCompanyModel.id == company.id
                     ).values(
-                        {InGameCompanyModel.current_stock_price: company.current_stock_price}
+                        {
+                            InGameCompanyModel.current_stock_price: (
+                                company.current_stock_price
+                            )
+                        }
                     )
                 )
             for _, player in game.players.items():
@@ -136,7 +135,7 @@ class GameAccessor(BaseAccessor):
             await session.commit()
             return game
 
-    async def get_all_active_games(self):
+    async def get_all_active_games(self) -> list[GameModel] or None:
         async with self.app.database.session.begin() as session:
             resp = await session.execute(
                 select(GameModel).options(
@@ -179,16 +178,20 @@ class GameAccessor(BaseAccessor):
             )
         return result
 
-    async def check2(self, update):
-        peer_id = update.object.peer_id
-        players = await self.app.store.vk_api.get_conversation_members(peer_id)
-        message = ''
-        for player in players:
-            message += player.name + ' '
-        await self.app.store.vk_api.send_message(
-            Message(
-                user_id=update.object.user_id,
-                text=message,
-                peer_id=update.object.peer_id
+    async def get_last_game(self, peer_id) -> GameModel or None:
+        async with self.app.database.session.begin() as session:
+            resp = await session.execute(
+                select(GameModel).options(
+                    joinedload(GameModel.players),
+                    joinedload(GameModel.companys)
+                ).where(
+                    GameModel.chat_id == peer_id,
+                ).order_by(
+                    desc(GameModel.created_at)
+                )
             )
-        )
+            try:
+                game: GameModel = await resp.scalar()
+                return game
+            except NoResultFound:
+                return None

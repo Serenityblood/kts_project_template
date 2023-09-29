@@ -1,9 +1,12 @@
 import asyncio
+import json
 import random
 import typing
 from typing import Optional
 
 from aiohttp import TCPConnector
+# from aio_pika import connect, Message as PikaMes
+# from aio_pika.abc import DeliveryMode
 from aiohttp.client import ClientSession
 from sqlalchemy import select
 
@@ -27,6 +30,8 @@ class VkApiAccessor(BaseAccessor):
         self.server: Optional[str] = None
         self.poller: Optional[Poller] = None
         self.ts: Optional[int] = None
+        self.rabbit_connect = None
+        self.rabbit_channel = None
 
     async def connect(self, app: "Application"):
         self.session = ClientSession(connector=TCPConnector(verify_ssl=False))
@@ -36,6 +41,7 @@ class VkApiAccessor(BaseAccessor):
             self.logger.error("Exception", exc_info=e)
         self.poller = Poller(app.store)
         self.logger.info("start polling")
+        # self.rabbit_connect = await connect("amqp://guest:guest@localhost/")
         await self.poller.start()
 
     async def disconnect(self, app: "Application"):
@@ -101,6 +107,18 @@ class VkApiAccessor(BaseAccessor):
                             ),
                         )
                     )
+            # channel = await self.rabbit_connect.channel()
+            # queue = await channel.declare_queue(
+            #         "task_queue_test",
+            #         durable=True,
+            #     )
+            # message_body = json.dumps(updates)
+            # await channel.default_exchange.publish(
+            #     PikaMes(
+            #         message_body.encode(), delivery_mode=DeliveryMode.PERSISTENT
+            #     ),
+            #     routing_key='task_queue_test'
+            # )
             await self.app.store.bots_manager.handle_updates(updates)
 
     async def send_message(self, message: Message) -> None:
