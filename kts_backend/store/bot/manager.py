@@ -295,6 +295,11 @@ class BotManager:
                 )
 
             if '/game_stats' in update.object.body:
+                if update.object.peer_id not in self.game_store:
+                    return await self.send_message(
+                        text='Нет активных игр',
+                        peer_id=update.object.peer_id
+                    )
                 message = (
                     await self.game_store[update.object.peer_id]
                     .get_game_stats()
@@ -313,7 +318,28 @@ class BotManager:
                     )
 
             if '/last_game' in update.object.body:
-                pass
+                game: GameModel = await self.app.store.games.get_last_game(
+                    update.object.peer_id
+                )
+                if game is None:
+                    return await self.send_message(
+                        text='Нет сыгранных игр',
+                        peer_id=update.object.peer_id
+                    )
+                message = ''
+                for p in game.players:
+                    message += (f'{p.name}: на руках - {p.clear_capital}, '
+                                f'в акциях - {p.capital}<br>')
+                for c in game.companys:
+                    message += (f'{c.title}: цена акции - '
+                                f'{c.current_stock_price}<br>')
+                message += (f'Игра была создана {game.created_at}<br>'
+                            f'Раунды - {game.current_round}/'
+                            f'{game.max_rounds}')
+                await self.send_message(
+                    text=message,
+                    peer_id=update.object.peer_id
+                )
 
     async def _round_end_update(self, update: Update):
         game: Game = self.game_store[update.object.peer_id]

@@ -191,7 +191,7 @@ class GameAccessor(BaseAccessor):
                 )
             )
             try:
-                game: GameModel = await resp.scalar()
+                game = resp.scalar()
                 return game
             except NoResultFound:
                 return None

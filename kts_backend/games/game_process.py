@@ -122,6 +122,7 @@ class Game:
         message += (
             await self.get_current_stats()
             + await self.get_company_stats()
-            + str(self.current_round) + ' - текущий раунд'
+            + f'Раунды - {self.current_round}/'
+            + f'{self.max_rounds}'
         )
         return message
