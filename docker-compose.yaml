@@ -68,5 +68,21 @@ services:
       - poller
       - bot
 
+  api:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    restart: always
+    command:
+      sh -c "python run_api.py"
+    ports:
+      - 8004:8004
+    depends_on:
+      - db
+      - rabbitmq
+      - poller
+      - bot
+      - sender
+
 volumes:
   pgdata:

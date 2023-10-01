@@ -5,9 +5,12 @@ if typing.TYPE_CHECKING:
 
 
 def setup_routes(app: "Application"):
-    # from admin_api.game.views import AddCompanyView
-
-    # app.router.add_view("/company.add", AddCompanyView)
     from admin_api.game.views import ListGamesView
+    from admin_api.game.views import ListGamesInChatView
+    from admin_api.game.views import ListPlayersView
+    from admin_api.game.views import ListCompanysView
 
-    app.router.add_view("/games.list", ListGamesView)
+    app.router.add_view('/games.list', ListGamesView)
+    app.router.add_view('/games.inchat', ListGamesInChatView)
+    app.router.add_view('/players.list', ListPlayersView)
+    app.router.add_view('/companys.list', ListCompanysView)

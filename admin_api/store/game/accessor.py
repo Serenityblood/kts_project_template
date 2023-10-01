@@ -9,23 +9,14 @@ from kts_backend.users.views.models import PlayerModel
 
 
 class GameAccessor(BaseAccessor):
-    async def list_companys(self) -> list[Company] or None:
+    async def list_companys(self) -> list[InGameCompanyModel] or None:
         async with self.app.database.session.begin() as session:
             res = await session.execute(select(InGameCompanyModel))
             try:
                 companys = res.scalars().all()
-                result = []
-                for company in companys:
-                    result.append(Company(
-                        id=company.id,
-                        title=company.title,
-                        current_stock_price=company.current_stock_price,
-                        game_id=company.game_id
-                        )
-                    )
+                return companys
             except NoResultFound:
                 return None
-            return result
 
     async def clear_companys(self) -> True or False:
         async with self.app.database.session.begin() as session:
@@ -41,23 +32,17 @@ class GameAccessor(BaseAccessor):
             )
             try:
                 companys = res.scalars().unique().all()
+                return companys
             except NoResultFound:
                 return None
-            result = []
-            for company in companys:
-                result.append(
-                    Company(
-                        id=company.id,
-                        current_stock_price=company.current_stock_price,
-                        game_id=company.game_id,
-                        title=company.title
-                    )
-                )
 
     async def list_games(self) -> list[GameModel] or None:
         async with self.app.database.session.begin() as session:
             res = await session.execute(
-                select(GameModel)
+                select(GameModel).options(
+                    joinedload(GameModel.companys),
+                    joinedload(GameModel.players)
+                )
             )
             try:
                 games = res.scalars().unique().all()
@@ -68,7 +53,10 @@ class GameAccessor(BaseAccessor):
     async def get_games_in_chat(self, chat_id):
         async with self.app.database.session.begin() as session:
             res = await session.execute(
-                select(GameModel).where(
+                select(GameModel).options(
+                    joinedload(GameModel.companys),
+                    joinedload(GameModel.players)
+                ).where(
                     GameModel.chat_id == chat_id
                 )
             )

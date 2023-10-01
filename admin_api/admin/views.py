@@ -30,7 +30,8 @@ class AdminLoginView(View):
 class AdminCurrentView(View):
     @response_schema(AdminSchema, 200)
     async def get(self):
-        if session := await get_session(self.request):
+        session = await get_session(self.request)
+        if session._new is False:
             admin = await self.request.app.store.admins.get_by_email(
                 session['admin']['email']
             )
