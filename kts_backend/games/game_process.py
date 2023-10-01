@@ -33,9 +33,10 @@ class Game:
         self.is_active = True
 
     async def start_round(self) -> asyncio.Task or str:
-        if self.is_active is False or self.current_round == self.max_rounds:
+        if not self.is_active or self.current_round == self.max_rounds:
             return 'Нет активных игр'
         self.round_in_progress = True
+        self.current_round += 1
         stop_round = asyncio.get_running_loop().create_task(self.stop_round())
         return stop_round
 
@@ -60,11 +61,9 @@ class Game:
                 ) * company.current_stock_price
         if self.current_round >= self.max_rounds:
             self.is_active = False
-        else:
-            self.current_round += 1
 
     async def buy_stock(self, company_title, user_id) -> str:
-        if self.round_in_progress is False:
+        if not self.round_in_progress:
             return 'Раунд закончился или не начался'
         if company_title not in self.companys:
             return 'такой компании нет'
@@ -83,7 +82,7 @@ class Game:
         return 'Не хватает денег'
 
     async def sell_stock(self, company_title, user_id) -> str:
-        if self.round_in_progress is False:
+        if not self.round_in_progress:
             return 'Раунд закончился или не начался'
         if company_title not in self.companys:
             return 'Такой компании нет'

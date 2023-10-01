@@ -4,8 +4,7 @@ from aiohttp_session import get_session, new_session
 
 from admin_api.admin.schemes import AdminSchema
 from admin_api.web.app import View
-from admin_api.web.middlewares import HTTP_ERROR_CODES
-from admin_api.web.utils import json_response, error_json_response
+from admin_api.web.utils import json_response
 
 
 class AdminLoginView(View):

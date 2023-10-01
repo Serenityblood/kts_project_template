@@ -4,7 +4,7 @@ from sqlalchemy import select, delete
 from sqlalchemy.orm import joinedload, subqueryload
 from sqlalchemy.exc import NoResultFound
 
-from kts_backend.games.models import GameModel, InGameCompanyModel, Company, StockModel
+from kts_backend.games.models import GameModel, InGameCompanyModel
 from kts_backend.users.views.models import PlayerModel
 
 
@@ -18,12 +18,12 @@ class GameAccessor(BaseAccessor):
             except NoResultFound:
                 return None
 
-    async def clear_companys(self) -> True or False:
+    async def clear_companys(self) -> True | False:
         async with self.app.database.session.begin() as session:
             await session.execute(delete(InGameCompanyModel))
         return True
 
-    async def get_companys_by_game_id(self, game_id) -> Company or None:
+    async def get_companys_by_game_id(self, game_id) -> list[InGameCompanyModel]:
         async with self.app.database.session.begin() as session:
             res = await session.execute(
                 select(InGameCompanyModel).where(

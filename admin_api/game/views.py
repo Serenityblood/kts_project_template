@@ -1,9 +1,10 @@
 from aiohttp.web_exceptions import HTTPForbidden
-from aiohttp_apispec import request_schema, response_schema, docs
+from aiohttp_apispec import request_schema, docs
 
-from admin_api.game.schemes import CompanySchema, GameSchema, GameInChat, PlayerSchema
+from admin_api.game.schemes import (
+    CompanySchema, GameSchema, GameInChat, PlayerSchema
+)
 from admin_api.web.app import View
-from admin_api.web.middlewares import HTTP_ERROR_CODES
 from admin_api.web.mixins import AuthRequiredMixin
 from admin_api.web.utils import json_response
 

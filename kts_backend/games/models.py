@@ -43,7 +43,9 @@ class InGameCompanyModel(db):
     id = Column(Integer, primary_key=True)
     title = Column(String)
     current_stock_price = Column(Integer)
-    game_id = Column(ForeignKey('games.id', ondelete='CASCADE'), nullable=False)
+    game_id = Column(
+        ForeignKey('games.id', ondelete='CASCADE'), nullable=False
+    )
     game = relationship('GameModel', back_populates='companys')
     stocks = relationship('StockModel', back_populates='company')
 
