@@ -125,4 +125,5 @@ local
 
 .code-workspace
 etc/
+venv/
 

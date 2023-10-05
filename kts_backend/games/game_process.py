@@ -78,7 +78,7 @@ class Game:
             ))
             user.clear_capital -= company.current_stock_price
             user.capital += company.current_stock_price
-            return 'Успешная покупка'
+            return f'{user.name} {user.last_name} успешная покупка {company.title}'
         return 'Не хватает денег'
 
     async def sell_stock(self, company_title, user_id) -> str:
@@ -93,7 +93,7 @@ class Game:
         user.stocks[company.title].pop()
         user.capital -= company.current_stock_price
         user.clear_capital += company.current_stock_price
-        return 'Продано'
+        return f'{user.name} {user.last_name} продал {company.title}'
 
     async def stop_game(self):
         self.is_active = False
@@ -102,7 +102,7 @@ class Game:
         message = ''
         for player in self.players.values():
             message += (
-                f'{player.name}: {player.capital} в '
+                f'{player.name} {player.last_name}: {player.capital} в '
                 f'акциях, {player.clear_capital} - на руках.<br>'
             )
         return message
