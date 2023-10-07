@@ -1,0 +1,88 @@
+version: '3.3'
+
+services:
+  rabbitmq:
+    image: rabbitmq:management
+    container_name: rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    depends_on:
+      - db
+
+  db:
+    image: postgres:13.0-alpine
+    volumes:
+      - pgdata:/var/lib/postgresql/dat
+    environment:
+      -  POSTGRES_USER=postgres
+      -  POSTGRES_PASSWORD=postgres
+      -  POSTGRES_HOST=db
+
+    ports:
+      - "5432:5432"
+
+  poller:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    restart: always
+    command:
+      sh -c "python kts_backend/store/vk_api/poller_sep.py"
+    ports:
+      - 8001:8001
+    depends_on:
+      - db
+      - rabbitmq
+
+  bot:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    restart: always
+    command:
+      sh -c "alembic upgrade head &&
+             python run_game.py"
+    ports:
+      - 8002:8002
+    depends_on:
+      - db
+      - rabbitmq
+      - poller
+
+  sender:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    restart: always
+    command:
+      sh -c "python kts_backend/store/vk_api/sender.py"
+    ports:
+      - 8003:8003
+    depends_on:
+      - db
+      - rabbitmq
+      - poller
+      - bot
+
+  api:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    restart: always
+    command:
+      sh -c "python run_api.py"
+    ports:
+      - 8004:8004
+    depends_on:
+      - db
+      - rabbitmq
+      - poller
+      - bot
+      - sender
+
+volumes:
+  pgdata:
